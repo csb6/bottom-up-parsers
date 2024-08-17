@@ -1,0 +1,46 @@
+module Util
+exports all
+definitions
+
+functions
+    -- Apply f to each element of the list in order, passing
+    -- the output of the previous invocation of f (or, for the
+    -- first element of the list, passing `initial`). The result
+    -- is the output of the final invocation of f.
+    foldl[@a, @b]: ((@a * @b) -> @b) -> @b -> seq of @a -> @b
+    foldl(f)(initial)(lst) == let
+        fold: seq of @a -> @b -> @b
+        fold(lst')(soFar) == cases lst':
+            []        -> soFar,
+            [a'] ^ ax -> fold(ax)(f(mk_(a', soFar)))
+        end
+    in fold(lst)(initial);
+
+    -- Same as foldl, but over a set. Order of elements passed
+    -- to f is unspecified.
+    foldSet[@a, @b]: ((@a * @b) -> @b) -> @b -> set of @a -> @b
+    foldSet(f)(initial)(s) == let
+        fold: set of @a -> @b -> @b
+        fold(s')(soFar) == cases s':
+            {}     -> soFar,
+            others -> let
+                -- Does not matter which item is chosen
+                item in set s' be st true
+            in fold(s' \ {item})(f(mk_(item, soFar)))
+        end
+    in fold(s)(initial);
+
+    -- Find largest element in the set
+    maxSet: set of nat1 -> nat1
+    maxSet(s) == let m in set s be st
+        forall item in set s & m >= item
+    in m
+    pre card s > 0;
+
+    -- Union all sets in s
+    unionAll[@a]: set of set of @a -> set of @a
+    unionAll(s) == foldSet[set of @a, set of @a](lambda mk_(s', soFar): set of @a * set of @a &
+        soFar union s'
+    )({})(s);
+
+end Util

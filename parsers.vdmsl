@@ -1,0 +1,101 @@
+module Parsers
+imports
+    from Util functions unionAll maxSet
+exports all
+definitions
+
+types
+    Terminal = <Plus> | <Minus> | <Mult> | <Div> | <LParen> | <RParen> | <Digit>;
+    Nonterminal = <Number> | <Sum> | <Product> | <Factor>;
+    Symbol = Terminal | Nonterminal;
+
+    Rule :: lhs: Nonterminal
+            rhs: seq of Symbol;
+
+    Item :: rule: Rule
+            progress: nat
+            start: nat
+
+functions
+    -- Finds the set of all nonterminals that can reduce to the empty string
+    findNullables: set of Rule -> set of Nonterminal
+    findNullables(rules) == let
+        find: set of Nonterminal -> set of Nonterminal
+        find(nullables) == let
+            nullables' = {r.lhs | r in set rules &
+                forall s in seq r.rhs & s in set nullables
+            }
+        in
+            if nullables = nullables' then nullables
+            else find(nullables')
+    in find({});
+
+    -- Maps the rhs of a rule to its longest nullable prefix
+    -- (a nullable prefix is a prefix in which all symbols are nullable)
+    nullPrefix: set of Nonterminal -> seq of Symbol -> seq of Nonterminal
+    nullPrefix(nullables)(s) == let
+        startInds = {i | i in set inds s &
+            forall x in seq s(1,...,i) & x in set nullables
+        }
+    in
+        if startInds = {} then []
+        else s(1,...,Util`maxSet(startInds));
+
+    -- Finds all suffixes of s that follow some instance of n in the sequence
+    followSuffixes: Nonterminal -> seq of Symbol -> set of seq of Symbol
+    followSuffixes(n)(s) == {s(i+1,...,len s) | i in set inds s & i < len s and s(i) = n}
+    post forall fs in set RESULT & len fs > 0;
+
+    -- Maps each nonterminal to the set of its possible start terminals
+    findStarts: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal
+    findStarts(rules)(nullables) == let
+        unionAll = Util`unionAll[Terminal],
+        nullPrefix' = nullPrefix(nullables),
+        nonterminals = { r.lhs | r in set rules },
+        -- The only possible start terminal for a terminal is itself
+        -- (terminals are never the lhs of any grammar rule)
+        termStarts = { s |-> {s} | s : Terminal },
+
+        find: map Symbol to set of Terminal -> map Symbol to set of Terminal
+        find(starts) == let
+            starts' = termStarts ++ {n |-> unionAll({
+                    -- Since any and all items in r.rhs's nullable prefix could match the empty string,
+                    -- all of their start terminals are start terminals for r.lhs
+                    unionAll({starts(i) | i in seq nullPrefix'(r.rhs)})
+                | r in set rules & r.lhs = n})
+            | n in set nonterminals}
+        in
+            if starts' = starts then starts
+            else find(starts')
+    in find(termStarts ++ {s |-> {} | s in set nonterminals});
+
+    -- Maps each nonterminal to the set of terminals that can directly follow a string matching
+    -- one of the nonterminal's rules.
+    findFollows: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal -> map Nonterminal to set of Terminal
+    findFollows(rules)(nullables)(starts) == let
+        unionAll = Util`unionAll[Terminal],
+        nullPrefix' = nullPrefix(nullables),
+        nonterminals = { r.lhs | r in set rules }
+
+        -- For each nonterminal n, search each rule's rhs for occurrences of n and gather any
+        -- terminals that could possibly follow n. There are three possible ways a terminal t
+        -- could follow n:
+        --   1. t is in the start set of the symbol s that directly follows n in r's rhs.
+        --          - If s is nullable, then this case is a subset of case 2.
+        --   2. t is in the start set of some symbol in n's nullable suffix.
+        --          - We use the nullable prefix of the follow suffix of n instead of the
+        --            nullable suffix, but these are equivalent.
+        --   3. t is in the start set of the symbol that directly follows n's nullable suffix.
+    in {n |-> unionAll({
+            unionAll({
+                if fs(1) in set nullables then
+                    unionAll({starts(i) | i in seq nullPrefix'(fs)}) union
+                    (if len fs > len nullPrefix'(fs) then
+                        starts(fs(len nullPrefix'(fs) + 1))
+                    else {})
+                else starts(fs(1))
+            | fs in set followSuffixes(n)(r.rhs)})
+        | r in set rules})
+    | n in set nonterminals}
+
+end Parsers

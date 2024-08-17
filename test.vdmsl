@@ -1,0 +1,22 @@
+module Test
+imports
+    from Parsers
+        functions findNullables
+        types Rule Nonterminal
+exports all
+definitions
+
+values
+    rules = {
+        mk_Parsers`Rule(<Number>, []),
+        mk_Parsers`Rule(<Number>, [<Digit>]),
+        mk_Parsers`Rule(<Sum>, [<Number>]),
+        mk_Parsers`Rule(<Product>, [<Digit>])
+    }
+
+functions
+
+    testNull: nat -> set of Parsers`Nonterminal
+    testNull(-) == Parsers`findNullables(rules)
+
+end Test
