@@ -1,6 +1,6 @@
 module Parsers
 imports
-    from Util functions unionAll maxSet
+    from Util functions unionAll; maxSet
 exports all
 definitions
 

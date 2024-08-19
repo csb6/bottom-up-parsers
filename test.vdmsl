@@ -2,7 +2,7 @@ module Test
 imports
     from Parsers
         functions findNullables
-        types Rule Nonterminal
+        types Rule; Nonterminal
 exports all
 definitions
 
