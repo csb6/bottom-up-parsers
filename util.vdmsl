@@ -14,6 +14,7 @@ functions
             []        -> soFar,
             [a'] ^ ax -> fold(ax)(f(mk_(a', soFar)))
         end
+        measure len lst'
     in fold(lst)(initial);
 
     -- Same as foldl, but over a set. Order of elements passed
@@ -28,6 +29,7 @@ functions
                 item in set s' be st true
             in fold(s' \ {item})(f(mk_(item, soFar)))
         end
+        measure card s'
     in fold(s)(initial);
 
     -- Find largest element in the set
