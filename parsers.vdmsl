@@ -30,7 +30,7 @@ functions
             else find(nullables')
     in find({});
 
-    -- Maps the rhs of a rule to its longest nullable prefix
+    -- Maps a sequence of symbols to its longest nullable prefix
     -- (a nullable prefix is a prefix in which all symbols are nullable)
     nullPrefix: set of Nonterminal -> seq of Symbol -> seq of Nonterminal
     nullPrefix(nullables)(s) == let
@@ -41,7 +41,7 @@ functions
         if startInds = {} then []
         else s(1,...,Util`maxSet(startInds));
 
-    -- Finds all suffixes of s that follow some instance of n in the sequence
+    -- Finds all suffixes of s that follow some instance of n
     followSuffixes: Nonterminal -> seq of Symbol -> set of seq of Symbol
     followSuffixes(n)(s) == {s(i+1,...,len s) | i in set inds s & i < len s and s(i) = n}
     post forall fs in set RESULT & len fs > 0;
@@ -70,7 +70,7 @@ functions
     in find(termStarts ++ {s |-> {} | s in set nonterminals});
 
     -- Maps each nonterminal to the set of terminals that can directly follow a string matching
-    -- one of the nonterminal's rules.
+    -- one of the nonterminal's rules
     findFollows: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal -> map Nonterminal to set of Terminal
     findFollows(rules)(nullables)(starts) == let
         unionAll = Util`unionAll[Terminal],
