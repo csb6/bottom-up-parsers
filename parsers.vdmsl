@@ -58,11 +58,14 @@ functions
 
         find: map Symbol to set of Terminal -> map Symbol to set of Terminal
         find(starts) == let
-            starts' = termStarts ++ {n |-> unionAll({
-                    -- Since any and all items in r.rhs's nullable prefix could match the empty string,
-                    -- all of their start terminals are start terminals for r.lhs
-                    unionAll({starts(i) | i in seq nullPrefix'(r.rhs)})
-                | r in set rules & r.lhs = n})
+            starts' = termStarts ++ {n |->
+                unionAll({
+                    if r.rhs(1) in set nullables then
+                        -- Since any and all items in r.rhs's nullable prefix could match the empty string,
+                        -- all of their start terminals are start terminals for r.lhs
+                        unionAll({starts(i) | i in seq nullPrefix'(r.rhs)})
+                    else starts(r.rhs(1))
+                | r in set rules & r.lhs = n and len r.rhs > 0})
             | n in set nonterminals}
         in
             if starts' = starts then starts
