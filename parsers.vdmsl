@@ -58,13 +58,12 @@ functions
         find: map Symbol to set of Terminal -> map Symbol to set of Terminal
         find(starts) == let
             -- For each nonterminal n, gather any terminal that could possibly be the first
-            -- token of a string matching n. There are two possible ways a terminal could start
+            -- token of a string matching n. There are two possible ways a terminal t could start
             -- such a string:
-            --    1. The terminal is in the start set of some symbol in the nullable prefix of one
-            --       of n's rules.
-            --    2. The terminal is in the start set of the symbol that directly follows the
-            --       nullable prefix of one of n's rules
-            --           - If the nullable prefix is the empty sequence, then this would be the first
+            --    1. t is in the start set of some symbol in the nullable prefix of one of n's rules.
+            --    2. t is in the start set of the symbol s that directly follows the nullable prefix of
+            --       one of n's rules (if there is such a symbol)
+            --           - If the nullable prefix is the empty sequence, then s would be the first
             --             symbol of the rule's rhs.
             starts' = termStarts ++ {n |->
                 unionAll({let
@@ -94,8 +93,9 @@ functions
         --   1. t is in the start set of some symbol in n's nullable suffix.
         --          - We use the nullable prefix of the follow suffix of n instead of the
         --            nullable suffix, but these are equivalent.
-        --   2. t is in the start set of the symbol that directly follows n's nullable suffix.
-        --          - If n's nullable suffix is the empty sequence, then t is the symbol that
+        --   2. t is in the start set of the symbol s that directly follows n's nullable suffix
+        --      (if there is such a symbol).
+        --          - If n's nullable suffix is the empty sequence, then s is the symbol that
         --            directly follows n.
     in {n |-> unionAll({
             unionAll({let
