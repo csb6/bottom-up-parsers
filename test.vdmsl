@@ -1,8 +1,8 @@
 module Test
 imports
     from Parsers
-        functions findNullables
-        types Rule; Nonterminal
+        functions findNullables; findStarts
+        types Rule; Symbol; Nonterminal; Terminal
 exports all
 definitions
 
@@ -17,6 +17,9 @@ values
 functions
 
     testNull: nat -> set of Parsers`Nonterminal
-    testNull(-) == Parsers`findNullables(rules)
+    testNull(-) == Parsers`findNullables(rules);
+
+    testStarts: nat -> map Parsers`Symbol to set of Parsers`Terminal
+    testStarts(-) == Parsers`findStarts(rules)(Parsers`findNullables(rules))
 
 end Test
