@@ -45,4 +45,20 @@ functions
         soFar union s'
     )({})(s);
 
+    -- Add item to top of stack
+    pushStack[@a]: seq of @a -> @a -> seq of @a
+    pushStack(s)(item) == s ^ [item];
+
+    -- Get item at top of stack without removing it
+    peekStack[@a]: seq of @a -> @a
+    peekStack(s) == s(len s)
+    pre len s > 0;
+
+    -- Get and remove item from top of stack
+    popStack[@a]: seq of @a -> @a * seq of @a
+    popStack(s) == let
+        [item] ^ rest = s
+    in mk_(item, rest)
+    pre len s > 0;
+
 end Util
