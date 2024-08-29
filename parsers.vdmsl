@@ -69,11 +69,10 @@ functions
                 unionAll({let
                     prefix = nullPrefix(nullables)(r.rhs)
                 in
-                    if prefix = [] then starts(r.rhs(1))
-                    else unionAll({starts(i) | i in seq prefix}) union
-                        (if len r.rhs > len prefix then starts(r.rhs(len prefix+1))
-                         else {})
-                | r in set rules & r.lhs = n and len r.rhs > 0})
+                    unionAll({starts(i) | i in seq prefix}) union
+                    (if len r.rhs > len prefix then starts(r.rhs(len prefix+1))
+                     else {})
+                | r in set rules & r.lhs = n})
             | n in set nonterminals}
         in
             if starts' = starts then starts
@@ -101,11 +100,9 @@ functions
             unionAll({let
                 fsPrefix = nullPrefix(nullables)(fs)
             in
-                if fs(1) in set nullables then
-                    unionAll({starts(i) | i in seq fsPrefix}) union
-                    (if len fs > len fsPrefix then starts(fs(len fsPrefix + 1))
-                     else {})
-                else starts(fs(1))
+                unionAll({starts(i) | i in seq fsPrefix}) union
+                (if len fs > len fsPrefix then starts(fs(len fsPrefix+1))
+                 else {})
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
     | n in set nonterminals}
