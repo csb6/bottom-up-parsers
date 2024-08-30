@@ -14,7 +14,9 @@ types
 
     Item :: rule: Rule
             progress: nat
-            start: nat
+        inv item == item.progress <= len item.rule.rhs;
+
+    State = set of Item;
 
 functions
     -- Finds the set of all nonterminals that can reduce to the empty string
@@ -105,6 +107,36 @@ functions
                  else {})
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
-    | n in set nonterminals}
+    | n in set nonterminals};
+
+    -- Returns the symbol following the dot if the item is incomplete.
+    -- Otherwise, returns a sentinel value
+    nextSym: Item -> [Symbol]
+    nextSym(item) ==
+        if item.progress < len item.rule.rhs then
+            item.rule.rhs(item.progress+1)
+        else nil;
+
+    -- Move the dot forward one
+    advanceItem: Item -> Item
+    advanceItem(item) == mk_Item(item.rule, item.progress+1)
+    pre item.progress < len item.rule.rhs;
+
+    closure: set of Rule -> State -> State
+    closure(rules)(s0) == let
+        unionAll = Util`unionAll[Item],
+
+        find: State -> State
+        find(s) == let
+            s' = s union unionAll({
+                {mk_Item(r, 0) | r in set rules & r.lhs = nextSym(i)}
+            | i in set s})
+        in
+            if s = s' then s
+            else find(s')
+    in find(s0);
+
+    goto: set of Rule -> State -> Symbol -> State
+    goto(rules)(s)(sym) == closure(rules)({advanceItem(i) | i in set s & nextSym(i) = sym});
 
 end Parsers
