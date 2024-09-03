@@ -100,10 +100,10 @@ functions
         --            directly follows n.
     in {n |-> unionAll({
             unionAll({let
-                fsPrefix = nullPrefix(nullables)(fs)
+                nullSuffix = nullPrefix(nullables)(fs)
             in
-                unionAll({starts(i) | i in seq fsPrefix}) union
-                (if len fs > len fsPrefix then starts(fs(len fsPrefix+1))
+                unionAll({starts(i) | i in seq nullSuffix}) union
+                (if len fs > len nullSuffix then starts(fs(len nullSuffix+1))
                  else {})
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
