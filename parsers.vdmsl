@@ -162,9 +162,7 @@ functions
     addAction(table)(key)(action) == table ++ {key |->
         if key in set dom table then
             cases mk_(table(key), action):
-                mk_(mk_Conflict(conflicts), b) ->
-                    if b in set conflicts then table(key)
-                    else mk_Conflict({b} union conflicts),
+                mk_(mk_Conflict(conflicts), b) -> mk_Conflict({b} union conflicts),
                 mk_(a, b)                      ->
                     if a = b then table(key)
                     else mk_Conflict({a, b})
