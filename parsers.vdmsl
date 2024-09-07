@@ -19,20 +19,109 @@ types
     State = set of Item;
 
     ShiftAction :: State;
-
     ReduceAction :: Rule;
-
     GotoAction :: State;
-
     Conflict :: set of Action;
         -- TODO: this crashes VDMJ
         --inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
-
     Action = ShiftAction | ReduceAction | GotoAction | <AcceptParse> | Conflict;
 
     LRTable = map State * Symbol to Action
 
 functions
+    -- Returns the symbol following the dot if the item is incomplete.
+    -- Otherwise, returns a sentinel value
+    nextSym: Item -> [Symbol]
+    nextSym(item) ==
+        if item.progress < len item.rule.rhs then
+            item.rule.rhs(item.progress+1)
+        else nil;
+
+    -- Move the dot forward one
+    advanceItem: Item -> Item
+    advanceItem(item) == mk_Item(item.rule, item.progress+1)
+    pre item.progress < len item.rule.rhs;
+
+    isComplete: Item -> bool
+    isComplete(item) == nextSym(item) = nil
+    post not RESULT => is_Symbol(nextSym(item));
+
+    -- Add a new action to the LRTable
+    addAction: LRTable -> (State * Symbol) -> Action -> LRTable
+    addAction(table)(key)(action) == table ++ {key |->
+        if key in set dom table then
+            cases mk_(table(key), action):
+                mk_(mk_Conflict(conflicts), b) -> mk_Conflict({b} union conflicts),
+                mk_(a, b)                      ->
+                    if a = b then table(key)
+                    else mk_Conflict({a, b})
+            end
+        else action
+    };
+
+    -----------
+    -- LR(0) --
+    -----------
+
+    closure: set of Rule -> State -> State
+    closure(rules)(s0) == let
+        unionAll = Util`unionAll[Item],
+
+        find: State -> State
+        find(s) == let
+            s' = s union unionAll({
+                {mk_Item(r, 0) | r in set rules & r.lhs = nextSym(i)}
+            | i in set s})
+        in
+            if s = s' then s
+            else find(s')
+    in find(s0);
+
+    goto: set of Rule -> State -> Symbol -> State
+    goto(rules)(s)(sym) == closure(rules)({advanceItem(i) | i in set s & nextSym(i) = sym});
+
+    -- Generates an LR(0) parsing table for the given grammar
+    -- and start symbol
+    generateLR0Table: set of Rule -> Nonterminal -> LRTable
+    generateLR0Table(rules)(startSym) == let
+        unionAll = Util`unionAll[State],
+        foldStates = Util`foldSet[State, LRTable],
+        foldItems = Util`foldSet[Item, LRTable],
+        foldTerms = Util`foldSet[Terminal, LRTable],
+        closure' = closure(rules),
+        goto' = goto(rules),
+        startRule = mk_Rule(<START>, [startSym, <EOI>]),
+        initStates = {closure'({mk_Item(startRule, 0)})},
+
+        generate: set of State -> LRTable -> LRTable
+        generate(states)(table) == let
+            states' = states union unionAll({
+                {goto'(s)(nextSym(i)) | i in set s & not isComplete(i)}
+            | s in set states}),
+
+            -- Add actions
+            table' = foldStates(lambda s: State, t: LRTable &
+                foldItems(lambda i: Item, t1: LRTable &
+                    if isComplete(i) then
+                        foldTerms(lambda term: Terminal, t2: LRTable &
+                            addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
+                        )(t1)({term | term : Terminal})
+                    else let
+                        action =
+                            if nextSym(i) = <EOI> then <AcceptParse>
+                            else let
+                                nextState = goto'(s)(nextSym(i))
+                            in
+                                if is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
+                                else mk_GotoAction(nextState)
+                    in addAction(t1)(mk_(s, nextSym(i)))(action)
+                )(t)(s)
+            )(table)(states')
+        in
+            if states' = states and table' = table then table'
+            else generate(states')(table')
+    in generate(initStates)({|->});
+
     -- Finds the set of all nonterminals that can reduce to the empty string
     findNullables: set of Rule -> set of Nonterminal
     findNullables(rules) == let
@@ -122,94 +211,5 @@ functions
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
     | n in set nonterminals};
-
-    -- Returns the symbol following the dot if the item is incomplete.
-    -- Otherwise, returns a sentinel value
-    nextSym: Item -> [Symbol]
-    nextSym(item) ==
-        if item.progress < len item.rule.rhs then
-            item.rule.rhs(item.progress+1)
-        else nil;
-
-    -- Move the dot forward one
-    advanceItem: Item -> Item
-    advanceItem(item) == mk_Item(item.rule, item.progress+1)
-    pre item.progress < len item.rule.rhs;
-
-    closure: set of Rule -> State -> State
-    closure(rules)(s0) == let
-        unionAll = Util`unionAll[Item],
-
-        find: State -> State
-        find(s) == let
-            s' = s union unionAll({
-                {mk_Item(r, 0) | r in set rules & r.lhs = nextSym(i)}
-            | i in set s})
-        in
-            if s = s' then s
-            else find(s')
-    in find(s0);
-
-    goto: set of Rule -> State -> Symbol -> State
-    goto(rules)(s)(sym) == closure(rules)({advanceItem(i) | i in set s & nextSym(i) = sym});
-
-    isComplete: Item -> bool
-    isComplete(item) == nextSym(item) = nil
-    post not RESULT => is_Symbol(nextSym(item));
-
-    -- Add a new action to the LRTable
-    addAction: LRTable -> (State * Symbol) -> Action -> LRTable
-    addAction(table)(key)(action) == table ++ {key |->
-        if key in set dom table then
-            cases mk_(table(key), action):
-                mk_(mk_Conflict(conflicts), b) -> mk_Conflict({b} union conflicts),
-                mk_(a, b)                      ->
-                    if a = b then table(key)
-                    else mk_Conflict({a, b})
-            end
-        else action
-    };
-
-    -- Generates an LR(0) parsing table for the given grammar
-    -- and start symbol
-    generateLR0Parser: set of Rule -> Nonterminal -> LRTable
-    generateLR0Parser(rules)(startSym) == let
-        unionAll = Util`unionAll[State],
-        foldStates = Util`foldSet[State, LRTable],
-        foldItems = Util`foldSet[Item, LRTable],
-        foldTerms = Util`foldSet[Terminal, LRTable],
-        closure' = closure(rules),
-        goto' = goto(rules),
-        startRule = mk_Rule(<START>, [startSym, <EOI>]),
-        initStates = {closure'({mk_Item(startRule, 0)})},
-
-        generate: set of State -> LRTable -> LRTable
-        generate(states)(table) == let
-            states' = states union unionAll({
-                {goto'(s)(nextSym(i)) | i in set s & not isComplete(i)}
-            | s in set states}),
-
-            -- Add actions
-            table' = foldStates(lambda s: State, t: LRTable &
-                foldItems(lambda i: Item, t1: LRTable &
-                    if isComplete(i) then
-                        foldTerms(lambda term: Terminal, t2: LRTable &
-                            addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
-                        )(t1)({term | term : Terminal})
-                    else let
-                        action =
-                            if nextSym(i) = <EOI> then <AcceptParse>
-                            else let
-                                nextState = goto'(s)(nextSym(i))
-                            in
-                                if is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
-                                else mk_GotoAction(nextState)
-                    in addAction(t1)(mk_(s, nextSym(i)))(action)
-                )(t)(s)
-            )(table)(states')
-        in
-            if states' = states and table' = table then table'
-            else generate(states')(table')
-    in generate(initStates)({|->})
 
 end Parsers
