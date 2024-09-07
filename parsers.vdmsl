@@ -155,7 +155,6 @@ functions
     findStarts: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal
     findStarts(rules)(nullables) == let
         unionAll = Util`unionAll[Terminal],
-        nonterminals = { r.lhs | r in set rules },
         -- The only possible start terminal for a terminal is itself
         -- (terminals are never the lhs of any grammar rule)
         termStarts = { s |-> {s} | s : Terminal },
@@ -178,18 +177,17 @@ functions
                     (if len r.rhs > len prefix then starts(r.rhs(len prefix+1))
                      else {})
                 | r in set rules & r.lhs = n})
-            | n in set nonterminals}
+            | n : Nonterminal}
         in
             if starts' = starts then starts
             else find(starts')
-    in find(termStarts ++ {s |-> {} | s in set nonterminals});
+    in find(termStarts ++ {n |-> {} | n : Nonterminal});
 
     -- Maps each nonterminal to the set of terminals that can directly follow a string matching
     -- one of the nonterminal's rules
     findFollows: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal -> map Nonterminal to set of Terminal
     findFollows(rules)(nullables)(starts) == let
-        unionAll = Util`unionAll[Terminal],
-        nonterminals = { r.lhs | r in set rules }
+        unionAll = Util`unionAll[Terminal]
 
         -- For each nonterminal n, search each rule's rhs for occurrences of n and gather any
         -- terminals that could possibly follow n. There are two possible ways a terminal t
@@ -210,6 +208,6 @@ functions
                  else {})
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
-    | n in set nonterminals};
+    | n : Nonterminal};
 
 end Parsers
