@@ -1,7 +1,7 @@
 module Test
 imports
     from Parsers
-        functions findNullables; findStarts; generateLR0Table
+        functions findNullables; findStarts; findFollows; generateLR0Table; generateSLR1Table
         types Rule; Symbol; Nonterminal; Terminal; LRTable
 exports all
 definitions
@@ -12,8 +12,10 @@ values
         mk_Parsers`Rule(<Number>, [<Digit>]),
         mk_Parsers`Rule(<Sum>, [<Number>]),
         mk_Parsers`Rule(<Product>, [<Digit>])
-    }
-
+    };
+    nullables = Parsers`findNullables(rules);
+    starts = Parsers`findStarts(rules)(nullables);
+    follows = Parsers`findFollows(rules)(nullables)(starts);
 functions
 
     testNull: nat -> set of Parsers`Nonterminal
@@ -23,6 +25,9 @@ functions
     testStarts(-) == Parsers`findStarts(rules)(Parsers`findNullables(rules));
 
     testLR0: nat -> Parsers`LRTable
-    testLR0(-) == Parsers`generateLR0Table(rules)(<Sum>)
+    testLR0(-) == Parsers`generateLR0Table(rules)(<Sum>);
+
+    testSLR1: nat -> Parsers`LRTable
+    testSLR1(-) == Parsers`generateSLR1Table(rules)(follows)(<Sum>)
 
 end Test

@@ -27,7 +27,10 @@ types
     Action = ShiftAction | ReduceAction | GotoAction | <AcceptParse> | Conflict;
 
     LRTable = map State * Symbol to Action
-
+values
+    foldStates = Util`foldSet[State, LRTable];
+    foldItems = Util`foldSet[Item, LRTable];
+    foldTerms = Util`foldSet[Terminal, LRTable];
 functions
     -- Returns the symbol following the dot if the item is incomplete.
     -- Otherwise, returns a sentinel value
@@ -85,9 +88,6 @@ functions
     generateLR0Table: set of Rule -> Nonterminal -> LRTable
     generateLR0Table(rules)(startSym) == let
         unionAll = Util`unionAll[State],
-        foldStates = Util`foldSet[State, LRTable],
-        foldItems = Util`foldSet[Item, LRTable],
-        foldTerms = Util`foldSet[Terminal, LRTable],
         closure' = closure(rules),
         goto' = goto(rules),
         startRule = mk_Rule(<START>, [startSym, <EOI>]),
@@ -121,6 +121,10 @@ functions
             if states' = states and table' = table then table'
             else generate(states')(table')
     in generate(initStates)({|->});
+
+    ------------
+    -- SLR(1) --
+    ------------
 
     -- Finds the set of all nonterminals that can reduce to the empty string
     findNullables: set of Rule -> set of Nonterminal
@@ -209,5 +213,44 @@ functions
             | fs in set followSuffixes(n)(r.rhs)})
         | r in set rules})
     | n : Nonterminal};
+
+    -- Generates an SLR(1) parsing table for the given grammar
+    -- and start symbol
+    generateSLR1Table: set of Rule -> map Nonterminal to set of Terminal -> Nonterminal -> LRTable
+    generateSLR1Table(rules)(follows)(startSym) == let
+        unionAll = Util`unionAll[State],
+        closure' = closure(rules),
+        goto' = goto(rules),
+        startRule = mk_Rule(<START>, [startSym, <EOI>]),
+        initStates = {closure'({mk_Item(startRule, 0)})},
+
+        generate: set of State -> LRTable -> LRTable
+        generate(states)(table) == let
+            states' = states union unionAll({
+                {goto'(s)(nextSym(i)) | i in set s & not isComplete(i)}
+            | s in set states}),
+
+            -- Add actions
+            table' = foldStates(lambda s: State, t: LRTable &
+                foldItems(lambda i: Item, t1: LRTable &
+                    if isComplete(i) then
+                        foldTerms(lambda term: Terminal, t2: LRTable &
+                            addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
+                        )(t1)(follows(i.rule.lhs))
+                    else let
+                        action =
+                            if nextSym(i) = <EOI> then <AcceptParse>
+                            else let
+                                nextState = goto'(s)(nextSym(i))
+                            in
+                                if is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
+                                else mk_GotoAction(nextState)
+                    in addAction(t1)(mk_(s, nextSym(i)))(action)
+                )(t)(s)
+            )(table)(states')
+        in
+            if states' = states and table' = table then table'
+            else generate(states')(table')
+    in generate(initStates)({|->});
 
 end Parsers
