@@ -5,8 +5,8 @@ exports all
 definitions
 
 types
-    Terminal = <Plus> | <Minus> | <Mult> | <Div> | <LParen> | <RParen> | <Digit>;
-    Nonterminal = <Number> | <Sum> | <Product> | <Factor> | <START> | <EOI>;
+    Terminal = <Plus> | <x> | <EOI>;
+    Nonterminal = <START> | <E> | <T>;
     Symbol = Terminal | Nonterminal;
 
     Rule :: lhs: Nonterminal

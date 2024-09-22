@@ -7,11 +7,11 @@ exports all
 definitions
 
 values
+    -- Grammar 3.23 from Appel, page 61
     rules = {
-        mk_Parsers`Rule(<Number>, []),
-        mk_Parsers`Rule(<Number>, [<Digit>]),
-        mk_Parsers`Rule(<Sum>, [<Number>]),
-        mk_Parsers`Rule(<Product>, [<Digit>])
+        mk_Parsers`Rule(<E>, [<T>, <Plus>, <E>]),
+        mk_Parsers`Rule(<E>, [<T>]),
+        mk_Parsers`Rule(<T>, [<x>])
     };
     nullables = Parsers`findNullables(rules);
     starts = Parsers`findStarts(rules)(nullables);
@@ -25,9 +25,9 @@ functions
     testStarts(-) == Parsers`findStarts(rules)(Parsers`findNullables(rules));
 
     testLR0: nat -> Parsers`LRTable
-    testLR0(-) == Parsers`generateLR0Table(rules)(<Sum>);
+    testLR0(-) == Parsers`generateLR0Table(rules)(<E>);
 
     testSLR1: nat -> Parsers`LRTable
-    testSLR1(-) == Parsers`generateSLR1Table(rules)(follows)(<Sum>)
+    testSLR1(-) == Parsers`generateSLR1Table(rules)(follows)(<E>);
 
 end Test
