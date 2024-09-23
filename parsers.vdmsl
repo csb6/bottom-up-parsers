@@ -68,13 +68,12 @@ functions
         else action
     };
 
-    findStartState: set of State -> [State]
-    findStartState(states) ==
-        if states = {} then nil
-        else let
-            startState in set states be st
-                exists i in set startState & i.rule.lhs = <START> and i.progress = 0
-        in startState;
+    findStartState: set of State -> State
+    findStartState(states) == let
+        startState in set states be st
+            exists i in set startState & i.rule.lhs = <START> and i.progress = 0
+    in startState
+    pre card states > 0;
 
     numberStates: LRTable -> map State to nat
     numberStates(table) == let
@@ -87,9 +86,8 @@ functions
             else let
                 s in set states' be st true
             in numberStates'(n+1)(states' \ {s})(m munion {s |-> n})
-    in
-        if startState = nil then {|->}
-        else numberStates'(1)(states \ {startState})({startState |-> 0});
+    in numberStates'(1)(states \ {startState})({startState |-> 0})
+    pre card dom table > 0;
 
     numberedTable: LRTable -> NumLRTable
     numberedTable(table) == let
@@ -102,7 +100,8 @@ functions
             mk_Conflict(conflicts) -> mk_NumConflict({actionToNumAction(c) | c in set conflicts}),
             others                 -> a
         end
-    in {mk_(stateNums(s), sym) |-> actionToNumAction(table(mk_(s, sym))) | mk_(s, sym) in set dom table};
+    in {mk_(stateNums(s), sym) |-> actionToNumAction(table(mk_(s, sym))) | mk_(s, sym) in set dom table}
+    pre card dom table > 0;
 
     -----------
     -- LR(0) --
