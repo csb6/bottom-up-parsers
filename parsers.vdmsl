@@ -220,6 +220,7 @@ functions
         closure' = closure(rules),
         goto' = goto(rules),
         startRule = mk_Rule(<START>, [startSym, <EOI>]),
+        follows' = follows ++ {startSym |-> follows(startSym) union {<EOI>}},
         initStates = {closure'({mk_Item(startRule, 0)})},
 
         generate: set of State -> LRTable -> LRTable
@@ -234,7 +235,7 @@ functions
                     if isComplete(i) then
                         foldTerms(lambda term: Terminal, t2: LRTable &
                             addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
-                        )(t1)(follows(i.rule.lhs))
+                        )(t1)(follows'(i.rule.lhs))
                     else let
                         action =
                             if nextSym(i) = <EOI> then <AcceptParse>
