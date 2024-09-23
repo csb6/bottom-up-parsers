@@ -26,7 +26,15 @@ types
         --inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
     Action = ShiftAction | ReduceAction | GotoAction | <AcceptParse> | Conflict;
 
-    LRTable = map State * Symbol to Action
+    NumShiftAction :: nat;
+    NumGotoAction :: nat;
+    NumConflict :: set of NumAction;
+        -- TODO: this crashes VDMJ
+        --inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
+    NumAction = NumShiftAction | ReduceAction | NumGotoAction | <AcceptParse> | NumConflict;
+
+    LRTable = map State * Symbol to Action;
+    NumLRTable = map nat * Symbol to NumAction
 values
     foldStates = Util`foldSet[State, LRTable];
     foldItems = Util`foldSet[Item, LRTable];
@@ -59,6 +67,42 @@ functions
             end
         else action
     };
+
+    findStartState: set of State -> [State]
+    findStartState(states) ==
+        if states = {} then nil
+        else let
+            startState in set states be st
+                exists i in set startState & i.rule.lhs = <START> and i.progress = 0
+        in startState;
+
+    numberStates: LRTable -> map State to nat
+    numberStates(table) == let
+        states = {s | mk_(s, -) in set dom table},
+        startState = findStartState(states),
+
+        numberStates': nat -> set of State -> map State to nat -> map State to nat
+        numberStates'(n)(states')(m) ==
+            if states' = {} then m
+            else let
+                s in set states' be st true
+            in numberStates'(n+1)(states' \ {s})(m munion {s |-> n})
+    in
+        if startState = nil then {|->}
+        else numberStates'(1)(states \ {startState})({startState |-> 0});
+
+    numberedTable: LRTable -> NumLRTable
+    numberedTable(table) == let
+        stateNums = numberStates(table),
+
+        actionToNumAction: Action -> NumAction
+        actionToNumAction(a) == cases a:
+            mk_ShiftAction(s)      -> mk_NumShiftAction(stateNums(s)),
+            mk_GotoAction(s)       -> mk_NumGotoAction(stateNums(s)),
+            mk_Conflict(conflicts) -> mk_NumConflict({actionToNumAction(c) | c in set conflicts}),
+            others                 -> a
+        end
+    in {mk_(stateNums(s), sym) |-> actionToNumAction(table(mk_(s, sym))) | mk_(s, sym) in set dom table};
 
     -----------
     -- LR(0) --

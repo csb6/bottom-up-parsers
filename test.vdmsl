@@ -1,11 +1,10 @@
 module Test
 imports
     from Parsers
-        functions findNullables; findStarts; findFollows; generateLR0Table; generateSLR1Table
-        types Rule; Symbol; Nonterminal; Terminal; LRTable
+        functions findNullables; findStarts; findFollows; generateLR0Table; generateSLR1Table; numberStates; numberedTable
+        types Rule; Symbol; Nonterminal; Terminal; State; LRTable; NumLRTable
 exports all
 definitions
-
 values
     -- Grammar 3.23 from Appel, page 61
     rules = {
@@ -24,10 +23,19 @@ functions
     testStarts: nat -> map Parsers`Symbol to set of Parsers`Terminal
     testStarts(-) == Parsers`findStarts(rules)(Parsers`findNullables(rules));
 
+    testFollows: nat -> map Parsers`Nonterminal to set of Parsers`Terminal
+    testFollows(-) == Parsers`findFollows(rules)(nullables)(starts);
+
     testLR0: nat -> Parsers`LRTable
     testLR0(-) == Parsers`generateLR0Table(rules)(<E>);
 
     testSLR1: nat -> Parsers`LRTable
     testSLR1(-) == Parsers`generateSLR1Table(rules)(follows)(<E>);
+
+    testNumberStates: nat -> map Parsers`State to nat
+    testNumberStates(-) == Parsers`numberStates(testSLR1(0));
+
+    testNumberedTable: nat -> Parsers`NumLRTable
+    testNumberedTable(0) == Parsers`numberedTable(testSLR1(0));
 
 end Test
