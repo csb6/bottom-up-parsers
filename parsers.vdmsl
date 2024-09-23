@@ -149,13 +149,11 @@ functions
                             addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
                         )(t1)({term | term : Terminal})
                     else let
+                        nextState = goto'(s)(nextSym(i)),
                         action =
                             if nextSym(i) = <EOI> then <AcceptParse>
-                            else let
-                                nextState = goto'(s)(nextSym(i))
-                            in
-                                if is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
-                                else mk_GotoAction(nextState)
+                            elseif is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
+                            else mk_GotoAction(nextState)
                     in addAction(t1)(mk_(s, nextSym(i)))(action)
                 )(t)(s)
             )(table)(states')
@@ -281,13 +279,11 @@ functions
                             addAction(t2)(mk_(s, term))(mk_ReduceAction(i.rule))
                         )(t1)(follows'(i.rule.lhs))
                     else let
+                        nextState = goto'(s)(nextSym(i)),
                         action =
                             if nextSym(i) = <EOI> then <AcceptParse>
-                            else let
-                                nextState = goto'(s)(nextSym(i))
-                            in
-                                if is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
-                                else mk_GotoAction(nextState)
+                            elseif is_Terminal(nextSym(i)) then mk_ShiftAction(nextState)
+                            else mk_GotoAction(nextState)
                     in addAction(t1)(mk_(s, nextSym(i)))(action)
                 )(t)(s)
             )(table)(states')
