@@ -52,12 +52,10 @@ functions
     -- Add a new action to the LRTable
     addAction: LRTable -> (State * Symbol) -> Action -> LRTable
     addAction(table)(key)(action) == table ++ {key |->
-        if key in set dom table then
+        if key in set dom table and table(key) <> action then
             cases mk_(table(key), action):
                 mk_(mk_Conflict(conflicts), b) -> mk_Conflict({b} union conflicts),
-                mk_(a, b)                      ->
-                    if a = b then table(key)
-                    else mk_Conflict({a, b})
+                mk_(a, b)                      -> mk_Conflict({a, b})
             end
         else action
     };
