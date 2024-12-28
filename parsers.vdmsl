@@ -21,16 +21,14 @@ types
     ShiftAction :: State;
     ReduceAction :: Rule;
     GotoAction :: State;
-    Conflict :: set of Action;
-        -- TODO: this crashes VDMJ
-        --inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
+    Conflict :: set of Action
+        inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
     Action = ShiftAction | ReduceAction | GotoAction | <AcceptParse> | Conflict;
 
     NumShiftAction :: nat;
     NumGotoAction :: nat;
-    NumConflict :: set of NumAction;
-        -- TODO: this crashes VDMJ
-        --inv mk_Conflict(conflict) == forall c in set conflict & not is_Conflict(c);
+    NumConflict :: set of NumAction
+        inv mk_NumConflict(conflict) == forall c in set conflict & not is_NumConflict(c);
     NumAction = NumShiftAction | ReduceAction | NumGotoAction | <AcceptParse> | NumConflict;
 
     LRTable = map State * Symbol to Action;
