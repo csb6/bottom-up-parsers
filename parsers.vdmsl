@@ -190,9 +190,8 @@ functions
         else s(1,...,Util`maxSet(lastInds));
 
     -- Finds all suffixes of s that follow some instance of n
-    followSuffixes: Nonterminal -> seq of Symbol -> set of seq of Symbol
-    followSuffixes(n)(s) == {s(i+1,...,len s) | i in set inds s & i < len s and s(i) = n}
-    post forall fs in set RESULT & len fs > 0;
+    followSuffixes: Nonterminal -> seq of Symbol -> set of seq1 of Symbol
+    followSuffixes(n)(s) == {s(i+1,...,len s) | i in set inds s & i < len s and s(i) = n};
 
     -- Maps each nonterminal to the set of its possible start terminals
     findStarts: set of Rule -> set of Nonterminal -> map Symbol to set of Terminal
